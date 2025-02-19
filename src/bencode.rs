@@ -177,6 +177,78 @@ mod tests {
         decode_bencoded_value(encoded);
     }
 
+    #[test]
+    fn decode_bencoded_value_list_with_dict() {
+        let encoded = "ld3:key5:value3:numi42eee";
+        let expected = json!([
+            {
+                "key": "value",
+                "num": 42
+            }
+        ]);
+        assert_eq!(decode_bencoded_value(encoded), expected);
+    }
+
+    #[test]
+    fn decode_bencoded_value_list_mixed_types() {
+        let encoded = "l3:onei2ed3:key3:val3:numi10ee5:applee";
+        let expected = json!([
+            "one",
+            2,
+            {
+                "key": "val",
+                "num": 10
+            },
+            "apple"
+        ]);
+        assert_eq!(decode_bencoded_value(encoded), expected);
+    }
+    
+    #[test]
+    fn decode_bencoded_value_list_with_multiple_dicts() {
+        let encoded = "ld3:foo3:bar3:numi100eed4:spam4:eggs5:spam24:milkee";
+        let expected = json!([
+            {
+                "foo": "bar",
+                "num": 100
+            },
+            {
+                "spam": "eggs",
+                "spam2": "milk"
+            }
+        ]);
+        assert_eq!(decode_bencoded_value(encoded), expected);
+    }
+    
+    #[test]
+    fn decode_bencoded_value_list_nested_dicts() {
+        let encoded = "ll3:one3:twoed3:foo3:bar3:numi5eeli9eee";
+        let expected = json!([
+            ["one", "two"],
+            {
+                "foo": "bar",
+                "num": 5
+            },
+            [9]
+        ]);
+        assert_eq!(decode_bencoded_value(encoded), expected);
+    }
+    
+    #[test]
+    fn decode_bencoded_value_list_deeply_nested_dicts_and_lists() {
+        let encoded = "ll5:apple6:bananaed3:keyd4:deepi99ee3:numi42eee";
+        let expected = json!([
+            ["apple", "banana"],
+            {
+                "key": {
+                    "deep": 99
+                },
+                "num": 42
+            }
+        ]);
+        assert_eq!(decode_bencoded_value(encoded), expected);
+    }
+
     /******** Dictionary ********/
     #[test]
     fn decode_bencoded_value_dict_empty() {
