@@ -203,7 +203,7 @@ mod tests {
         ]);
         assert_eq!(decode_bencoded_value(encoded), expected);
     }
-    
+
     #[test]
     fn decode_bencoded_value_list_with_multiple_dicts() {
         let encoded = "ld3:foo3:bar3:numi100eed4:spam4:eggs5:spam24:milkee";
@@ -219,7 +219,7 @@ mod tests {
         ]);
         assert_eq!(decode_bencoded_value(encoded), expected);
     }
-    
+
     #[test]
     fn decode_bencoded_value_list_nested_dicts() {
         let encoded = "ll3:one3:twoed3:foo3:bar3:numi5eeli9eee";
@@ -233,7 +233,7 @@ mod tests {
         ]);
         assert_eq!(decode_bencoded_value(encoded), expected);
     }
-    
+
     #[test]
     fn decode_bencoded_value_list_deeply_nested_dicts_and_lists() {
         let encoded = "ll5:apple6:bananaed3:keyd4:deepi99ee3:numi42eee";
