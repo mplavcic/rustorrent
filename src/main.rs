@@ -44,7 +44,12 @@ fn main() {
 
             println!("Info Hash: {}", hex::encode(&bencoded_metainfo_info_hash));
 
-            println!("Piece Length {}", metainfo.info.piece_length);
+            println!("Piece Length: {}", metainfo.info.piece_length);
+
+            println!("Piece Hashes:");
+            for hash in metainfo.info.pieces.0 {
+                println!("{}", hex::encode(hash));
+            }
         }
     }
 }

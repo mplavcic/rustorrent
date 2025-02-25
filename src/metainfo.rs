@@ -37,7 +37,7 @@ pub struct File {
 }
 
 #[derive(Debug, Clone)]
-struct Hashes(Vec<[u8; 20]>);
+pub struct Hashes(pub Vec<[u8; 20]>);
 struct HashesVisitor;
 
 impl<'de> Visitor<'de> for HashesVisitor {
