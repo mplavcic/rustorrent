@@ -3,16 +3,17 @@ use serde::de::Visitor;
 use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serialize;
+use serde::Serializer;
 use std::fmt;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct MetaInfo {
     #[serde(rename = "announce")]
     pub tracker_url: String,
     pub info: Info,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Info {
     pub name: String,
     #[serde(rename = "piece length")]
@@ -22,20 +23,20 @@ pub struct Info {
     pub keys: Keys,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(untagged)]
 pub enum Keys {
     SingleFile { length: usize },
     MultiFile { files: Vec<File> },
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct File {
     pub length: usize,
     pub path: Vec<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct Hashes(Vec<[u8; 20]>);
 struct HashesVisitor;
 
@@ -69,5 +70,15 @@ impl<'de> Deserialize<'de> for Hashes {
         D: Deserializer<'de>,
     {
         deserializer.deserialize_bytes(HashesVisitor)
+    }
+}
+
+impl Serialize for Hashes {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let single_slice = self.0.concat();
+        serializer.serialize_bytes(&single_slice)
     }
 }

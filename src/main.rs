@@ -5,6 +5,8 @@ use bencode::decode_bencoded_value;
 use clap::Parser;
 use clap::Subcommand;
 use metainfo::MetaInfo;
+use sha1::Digest;
+use sha1::Sha1;
 use std::fs;
 
 #[derive(Parser)]
@@ -30,9 +32,17 @@ fn main() {
         Commands::Info { file_path } => {
             let bencoded_metainfo = fs::read(file_path).unwrap();
             let metainfo: MetaInfo = serde_bencode::from_bytes(&bencoded_metainfo).unwrap();
+
             // TODO: multiple files
             println!("Tracker URL: {}", metainfo.tracker_url);
             println!("Length: {}", metainfo.info.piece_length);
+
+            let mut hasher = Sha1::new();
+            let bencoded_metainfo_info = serde_bencode::to_bytes(&metainfo.info).unwrap();
+            hasher.update(&bencoded_metainfo_info);
+            let bencoded_metainfo_info_hash = hasher.finalize();
+
+            println!("Info Hash: {}", hex::encode(&bencoded_metainfo_info_hash));
         }
     }
 }
