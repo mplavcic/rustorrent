@@ -43,6 +43,8 @@ fn main() {
             let bencoded_metainfo_info_hash = hasher.finalize();
 
             println!("Info Hash: {}", hex::encode(&bencoded_metainfo_info_hash));
+
+            println!("Piece Length {}", metainfo.info.piece_length);
         }
     }
 }
