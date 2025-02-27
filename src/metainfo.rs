@@ -4,10 +4,12 @@ use serde::Deserialize;
 use serde::Deserializer;
 use serde::Serialize;
 use serde::Serializer;
+use sha1::Digest;
+use sha1::Sha1;
 use std::fmt;
 
 #[derive(Debug, Clone, Deserialize)]
-pub struct MetaInfo {
+pub struct Metainfo {
     #[serde(rename = "announce")]
     pub tracker_url: String,
     pub info: Info,
@@ -39,6 +41,16 @@ pub struct File {
 #[derive(Debug, Clone)]
 pub struct Hashes(pub Vec<[u8; 20]>);
 struct HashesVisitor;
+
+impl Metainfo {
+    pub fn info_hash(&self) -> [u8; 20] {
+        let mut hasher = Sha1::new();
+        let bencoded_metainfo_info = serde_bencode::to_bytes(&self.info).unwrap();
+        hasher.update(&bencoded_metainfo_info);
+        let bencoded_metainfo_info_hash = hasher.finalize();
+        bencoded_metainfo_info_hash.into()
+    }
+}
 
 impl<'de> Visitor<'de> for HashesVisitor {
     type Value = Hashes;

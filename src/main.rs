@@ -1,13 +1,13 @@
 mod bencode;
 mod metainfo;
+mod tracker;
 
 use bencode::decode_bencoded_value;
 use clap::Parser;
 use clap::Subcommand;
-use metainfo::MetaInfo;
-use sha1::Digest;
-use sha1::Sha1;
+use metainfo::Metainfo;
 use std::fs;
+use tracker::TrackerResponse;
 
 #[derive(Parser)]
 struct Cli {
@@ -19,6 +19,7 @@ struct Cli {
 enum Commands {
     Decode { encoded_value: String },
     Info { file_path: String },
+    Peers { file_path: String },
 }
 
 fn main() {
@@ -31,17 +32,13 @@ fn main() {
         }
         Commands::Info { file_path } => {
             let bencoded_metainfo = fs::read(file_path).unwrap();
-            let metainfo: MetaInfo = serde_bencode::from_bytes(&bencoded_metainfo).unwrap();
+            let metainfo: Metainfo = serde_bencode::from_bytes(&bencoded_metainfo).unwrap();
 
             // TODO: multiple files
             println!("Tracker URL: {}", metainfo.tracker_url);
             println!("Length: {}", metainfo.info.piece_length);
 
-            let mut hasher = Sha1::new();
-            let bencoded_metainfo_info = serde_bencode::to_bytes(&metainfo.info).unwrap();
-            hasher.update(&bencoded_metainfo_info);
-            let bencoded_metainfo_info_hash = hasher.finalize();
-
+            let bencoded_metainfo_info_hash = metainfo.info_hash();
             println!("Info Hash: {}", hex::encode(&bencoded_metainfo_info_hash));
 
             println!("Piece Length: {}", metainfo.info.piece_length);
@@ -49,6 +46,34 @@ fn main() {
             println!("Piece Hashes:");
             for hash in metainfo.info.pieces.0 {
                 println!("{}", hex::encode(hash));
+            }
+        }
+        Commands::Peers { file_path } => {
+            let bencoded_metainfo = fs::read(file_path).unwrap();
+            let metainfo: Metainfo = serde_bencode::from_bytes(&bencoded_metainfo).unwrap();
+
+            let tracker_url = &metainfo.tracker_url;
+
+            let info_hash = metainfo.info_hash();
+            let urlencoded_info_hash =
+                url::form_urlencoded::byte_serialize(&info_hash).collect::<String>();
+
+            let length = if let metainfo::Keys::SingleFile { length } = metainfo.info.keys {
+                length
+            } else {
+                //TODO: multiple files
+                todo!();
+            };
+
+            let url = format!(
+                "{tracker_url}/?info_hash={urlencoded_info_hash}&peer_id=00112233445566778899&port=6881&uploaded=0&downloaded=0&left={length}&compact=1"
+                );
+
+            let response_bytes = reqwest::blocking::get(url).unwrap().bytes().unwrap();
+            let response: TrackerResponse = serde_bencode::from_bytes(&response_bytes).expect("yo");
+
+            for peer in response.peers.0 {
+                println!("{peer}");
             }
         }
     }
