@@ -1,10 +1,13 @@
 mod bencode;
+mod handshake;
 mod metainfo;
 mod tracker;
 
+use std::io::{Read, Write};
 use bencode::decode_bencoded_value;
 use clap::Parser;
 use clap::Subcommand;
+use handshake::Handshake;
 use metainfo::Metainfo;
 use std::fs;
 use tracker::TrackerResponse;
@@ -17,9 +20,19 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    Decode { encoded_value: String },
-    Info { file_path: String },
-    Peers { file_path: String },
+    Decode {
+        encoded_value: String,
+    },
+    Info {
+        file_path: String,
+    },
+    Peers {
+        file_path: String,
+    },
+    Handshake {
+        file_path: String,
+        peer: std::net::SocketAddrV4,
+    },
 }
 
 fn main() {
@@ -75,6 +88,25 @@ fn main() {
             for peer in response.peers.0 {
                 println!("{peer}");
             }
+        }
+        Commands::Handshake { file_path, peer } => {
+            let mut stream =
+                std::net::TcpStream::connect(format!("{peer}")).expect("jebena konekcija");
+            let bencoded_metainfo = fs::read(file_path).unwrap();
+            let metainfo: Metainfo = serde_bencode::from_bytes(&bencoded_metainfo).unwrap();
+
+            let message = Handshake::new(metainfo.info_hash());
+
+            stream
+                .write_all(&message.to_bytes())
+                .expect("streamulja write all");
+
+            let mut buffer = [0; 68];
+            stream.read(&mut buffer).expect("streamulj read");
+
+            let handshake = Handshake::from_bytes(&buffer);
+
+            println!("Peer ID: {}", hex::encode(handshake.peer_id));
         }
     }
 }
